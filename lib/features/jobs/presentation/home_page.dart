@@ -36,7 +36,7 @@ class HomePage extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
       body: jobsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const _EmptyBoard(syncing: true),
         error: (error, stackTrace) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -110,15 +110,19 @@ class _NotificationButton extends StatelessWidget {
 }
 
 class _EmptyBoard extends StatelessWidget {
-  const _EmptyBoard();
+  const _EmptyBoard({this.syncing = false});
+
+  final bool syncing;
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Text(
-          'Nenhuma candidatura ainda.\nToque no + para adicionar a primeira vaga.',
+          syncing
+              ? 'Sincronizando candidaturas...\nSe estiver sem dados, use o + para criar a primeira vaga.'
+              : 'Nenhuma candidatura ainda.\nToque no + para adicionar a primeira vaga.',
           textAlign: TextAlign.center,
         ),
       ),
