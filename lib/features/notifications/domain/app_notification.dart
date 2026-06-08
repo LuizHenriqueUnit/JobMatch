@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class AppNotification {
   const AppNotification({
     required this.id,
@@ -16,10 +18,10 @@ class AppNotification {
   factory AppNotification.fromMap(Map<String, dynamic> map) {
     return AppNotification(
       id: map['id'] as String? ?? '',
-      userId: map['user_id'] as String? ?? '',
+      userId: map['user_uid'] as String? ?? map['user_id'] as String? ?? '',
       message: map['message'] as String? ?? '',
       isRead: map['is_read'] as bool? ?? false,
-      createdAt: DateTime.tryParse(map['created_at'] as String? ?? ''),
+      createdAt: _parseDateTime(map['created_at']),
     );
   }
 
@@ -38,4 +40,12 @@ class AppNotification {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+}
+
+DateTime? _parseDateTime(Object? raw) {
+  if (raw == null) return null;
+  if (raw is Timestamp) return raw.toDate();
+  if (raw is DateTime) return raw;
+  if (raw is String) return DateTime.tryParse(raw);
+  return null;
 }

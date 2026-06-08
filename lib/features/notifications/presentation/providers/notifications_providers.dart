@@ -1,15 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../features/auth/data/auth_repository.dart';
+import '../../../../shared/providers/firebase_providers.dart';
 import '../../data/notifications_repository.dart';
 import '../../domain/app_notification.dart';
 
 final notificationsRepositoryProvider = Provider<NotificationsRepository>(
-  (ref) => NotificationsRepository(ref.watch(inMemoryStoreProvider)),
+  (ref) => NotificationsRepository(ref.watch(firebaseFirestoreProvider)),
 );
 
-final notificationsStreamProvider =
-    StreamProvider.autoDispose<List<AppNotification>>((ref) {
+final notificationsStreamProvider = StreamProvider<List<AppNotification>>((ref) {
   final user = ref.watch(currentUserProvider);
   if (user == null) return Stream.value(const <AppNotification>[]);
   return ref.watch(notificationsRepositoryProvider).watchNotifications(user.id);
