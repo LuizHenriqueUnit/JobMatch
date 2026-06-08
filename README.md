@@ -6,5 +6,3 @@
 | **Davi José Santana Andrade** | Nova Candidatura  e Detalhes | 📅 | (Meu video) https://youtu.be/UPZCsyPVjyU |
 | **Milton De Souza Santos Júnior** | Perfil e Notificações.| 📅 |
 | **Fernando Figueiredo Gois** | HomePage | 📅 |
-
-
