@@ -1,4 +1,5 @@
 import '../../../core/constants/job_status.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class JobApplication {
   const JobApplication({
@@ -24,14 +25,13 @@ class JobApplication {
   factory JobApplication.fromMap(Map<String, dynamic> map) {
     return JobApplication(
       id: map['id'] as String? ?? '',
-      userId: map['user_id'] as String? ?? '',
+      userId: map['user_uid'] as String? ?? map['user_id'] as String? ?? '',
       roleName: map['role_name'] as String? ?? '',
       companyName: map['company_name'] as String? ?? '',
       platform: map['platform'] as String? ?? '',
       status: JobStatus.fromLabel(map['status'] as String? ?? ''),
       notes: map['notes'] as String? ?? '',
-      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt: _parseDateTime(map['created_at']),
     );
   }
 
@@ -56,4 +56,14 @@ class JobApplication {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+}
+
+DateTime _parseDateTime(Object? raw) {
+  if (raw == null) return DateTime.now();
+  if (raw is Timestamp) return raw.toDate();
+  if (raw is DateTime) return raw;
+  if (raw is String) {
+    return DateTime.tryParse(raw) ?? DateTime.now();
+  }
+  return DateTime.now();
 }

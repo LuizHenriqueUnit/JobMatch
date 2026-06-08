@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,17 +41,24 @@ class _JobFormPageState extends ConsumerState<JobFormPage> {
     try {
       await ref.read(jobsRepositoryProvider).createJob(
             userId: user.id,
+            userEmail: user.email,
             roleName: _roleController.text,
             companyName: _companyController.text,
             platform: _platformController.text,
             status: _selectedStatus,
           );
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Candidatura salva. Sincronizando mural...')),
+      );
       context.pop();
     } catch (error) {
       if (!mounted) return;
+      final message = error is TimeoutException
+          ? 'Tempo de rede excedido. Verifique sua conexao e tente novamente.'
+          : 'Nao foi possivel salvar a vaga: $error';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Nao foi possivel salvar a vaga: $error')),
+        SnackBar(content: Text(message)),
       );
     } finally {
       if (mounted) setState(() => _saving = false);

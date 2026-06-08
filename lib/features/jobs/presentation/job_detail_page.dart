@@ -63,6 +63,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       await ref.read(jobsRepositoryProvider).updateStatus(
             id: job.id,
             userId: user.id,
+            userEmail: user.email,
             status: status,
             roleName: _roleController.text,
             companyName: _companyController.text,
@@ -80,10 +81,14 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
 
   Future<void> _save(JobApplication job) async {
     if (!_formKey.currentState!.validate()) return;
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
     setState(() => _saving = true);
     try {
       await ref.read(jobsRepositoryProvider).updateJob(
             id: job.id,
+            userId: user.id,
+            userEmail: user.email,
             roleName: _roleController.text,
             companyName: _companyController.text,
             platform: _platformController.text,
@@ -135,6 +140,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       await ref.read(jobsRepositoryProvider).deleteJob(
             id: job.id,
             userId: user.id,
+            userEmail: user.email,
             roleName: _roleController.text,
             companyName: _companyController.text,
           );
