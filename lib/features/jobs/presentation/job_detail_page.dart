@@ -8,6 +8,13 @@ import '../../auth/data/auth_repository.dart';
 import '../domain/job_application.dart';
 import 'providers/jobs_providers.dart';
 
+const _primary = Color(0xFF5949C6);
+const _background = Color(0xFFF1EFE8);
+const _border = Color(0xFFD9D3C8);
+const _text = Color(0xFF25232D);
+const _muted = Color(0xFF78736C);
+const _danger = Color(0xFFC83A3A);
+
 class JobDetailPage extends ConsumerStatefulWidget {
   const JobDetailPage({super.key, required this.jobId});
 
@@ -124,7 +131,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                 child: const Text('Cancelar'),
               ),
               FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+                style: FilledButton.styleFrom(backgroundColor: _danger),
                 onPressed: () => Navigator.of(context).pop(true),
                 child: const Text('Excluir'),
               ),
@@ -161,7 +168,14 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     final jobAsync = ref.watch(jobDetailsProvider(widget.jobId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalhe da vaga')),
+      backgroundColor: _background,
+      appBar: AppBar(
+        title: const Text('Detalhe da vaga'),
+        leading: IconButton(
+          onPressed: () => context.pop(),
+          icon: const Icon(Icons.chevron_left, size: 28),
+        ),
+      ),
       body: jobAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
@@ -182,90 +196,292 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
 
           _bindForm(job);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Criada em ${formatDateTime(job.createdAt)}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _roleController,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Vaga'),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty) ? 'Informe a vaga' : null,
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: _companyController,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Empresa'),
-                    validator: (value) => (value == null || value.trim().isEmpty)
-                        ? 'Informe a empresa'
-                        : null,
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: _platformController,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Plataforma'),
-                    validator: (value) => (value == null || value.trim().isEmpty)
-                        ? 'Informe a plataforma'
-                        : null,
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: _notesController,
-                    minLines: 4,
-                    maxLines: 8,
-                    textInputAction: TextInputAction.newline,
-                    decoration: const InputDecoration(labelText: 'Anotacoes'),
-                  ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'Troca rapida de status (1 clique)',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final status in kFunnelOrder)
-                        ChoiceChip(
-                          label: Text(status.label),
-                          selected: _selectedStatus == status,
-                          onSelected: _updatingStatus
-                              ? null
-                              : (_) => _updateStatus(job, status),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: _saving ? null : () => _save(job),
-                    child: Text(_saving ? 'Salvando...' : 'Salvar edicao'),
-                  ),
-                  const SizedBox(height: 10),
-                  FilledButton(
-                    onPressed: _deleting ? null : () => _delete(job),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFDC2626),
+          return SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SummaryCard(job: job),
+                    const SizedBox(height: 10),
+                    _Panel(
+                      title: 'Dados da vaga',
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _roleController,
+                            decoration: const InputDecoration(labelText: 'Vaga'),
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty)
+                                    ? 'Informe a vaga'
+                                    : null,
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _companyController,
+                            decoration: const InputDecoration(labelText: 'Empresa'),
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty)
+                                    ? 'Informe a empresa'
+                                    : null,
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _platformController,
+                            decoration: const InputDecoration(labelText: 'Plataforma'),
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty)
+                                    ? 'Informe a plataforma'
+                                    : null,
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Text(_deleting ? 'Excluindo...' : 'Excluir candidatura'),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    _Panel(
+                      title: 'Alterar status',
+                      child: Column(
+                        children: [
+                          for (final status in kFunnelOrder) ...[
+                            _StatusRow(
+                              status: status,
+                              selected: _selectedStatus == status,
+                              disabled: _updatingStatus,
+                              onTap: () => _updateStatus(job, status),
+                            ),
+                            if (status != kFunnelOrder.last) const SizedBox(height: 8),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _Panel(
+                      title: 'Anotacoes',
+                      child: TextFormField(
+                        controller: _notesController,
+                        minLines: 4,
+                        maxLines: 7,
+                        decoration: const InputDecoration(
+                          hintText: 'Entrevista marcada para 18/04 as 15h...',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: _saving ? null : () => _save(job),
+                      child: Text(_saving ? 'Salvando...' : 'Salvar alteracoes'),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton(
+                      onPressed: _deleting ? null : () => _delete(job),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _danger,
+                        side: const BorderSide(color: Color(0xFFE89B9B)),
+                      ),
+                      child: Text(_deleting ? 'Excluindo...' : 'Excluir vaga'),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
         },
       ),
     );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.job});
+
+  final JobApplication job;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEDEAFF),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            job.roleName,
+            style: const TextStyle(
+              color: Color(0xFF2E267C),
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(job.companyName, style: const TextStyle(color: _primary, fontSize: 12)),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _SmallTag(job.platform),
+              _SmallTag('Criada em ${formatDateTime(job.createdAt)}'),
+              _SmallTag(job.status.label),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SmallTag extends StatelessWidget {
+  const _SmallTag(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: _primary),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: _primary,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({
+    required this.title,
+    required this.child,
+  });
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              color: _muted,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({
+    required this.status,
+    required this.selected,
+    required this.disabled,
+    required this.onTap,
+  });
+
+  final JobStatus status;
+  final bool selected;
+  final bool disabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: disabled ? null : onTap,
+      borderRadius: BorderRadius.circular(7),
+      child: Container(
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFEDEAFF) : Colors.white,
+          border: Border.all(color: selected ? _primary : _border),
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: selected ? _primary : const Color(0xFFC6C0B8),
+              size: 17,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _statusDetailLabel(status),
+                style: const TextStyle(color: _text, fontSize: 12),
+              ),
+            ),
+            if (selected) _ActiveBadge(status: status),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveBadge extends StatelessWidget {
+  const _ActiveBadge({required this.status});
+
+  final JobStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: status.color.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Text(
+        status == JobStatus.entrevista ? 'Ativo' : status.label,
+        style: TextStyle(
+          color: status.color,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+String _statusDetailLabel(JobStatus status) {
+  switch (status) {
+    case JobStatus.testeTecnico:
+      return 'Teste tecnico';
+    case JobStatus.oferta:
+      return 'Oferta recebida';
+    case JobStatus.rejeitado:
+      return 'Recusado / Encerrado';
+    default:
+      return status.label;
   }
 }

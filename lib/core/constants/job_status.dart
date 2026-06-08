@@ -35,17 +35,17 @@ extension JobStatusUi on JobStatus {
   Color get color {
     switch (this) {
       case JobStatus.inscrito:
-        return const Color(0xFFE8EEF9);
+        return const Color(0xFF5A4BC6);
       case JobStatus.triagem:
-        return const Color(0xFFFDF3D7);
+        return const Color(0xFFB88019);
       case JobStatus.entrevista:
-        return const Color(0xFFE4F9ED);
+        return const Color(0xFFC47A16);
       case JobStatus.testeTecnico:
-        return const Color(0xFFEDE8FF);
+        return const Color(0xFF5A4BC6);
       case JobStatus.oferta:
-        return const Color(0xFFD8F6E5);
+        return const Color(0xFF5E9F34);
       case JobStatus.rejeitado:
-        return const Color(0xFFFBE7E7);
+        return const Color(0xFFC83A3A);
     }
   }
 }
