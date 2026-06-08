@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/data/in_memory_store.dart';
+import '../domain/app_auth_exception.dart';
 import '../data/auth_repository.dart';
 
 class AuthPage extends StatelessWidget {
@@ -42,7 +42,7 @@ class AuthPage extends StatelessWidget {
                         ),
                         SizedBox(height: 12),
                         SizedBox(
-                          height: 340,
+                          height: 390,
                           child: TabBarView(
                             physics: NeverScrollableScrollPhysics(),
                             children: [
@@ -72,9 +72,11 @@ class _SignInForm extends ConsumerStatefulWidget {
 }
 
 class _SignInFormState extends ConsumerState<_SignInForm> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _loading = false;
+  bool _googleLoading = false;
 
   @override
   void dispose() {
@@ -84,6 +86,7 @@ class _SignInFormState extends ConsumerState<_SignInForm> {
   }
 
   Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
       await ref.read(authRepositoryProvider).signIn(
@@ -100,31 +103,69 @@ class _SignInFormState extends ConsumerState<_SignInForm> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _googleLoading = true);
+    try {
+      await ref.read(authRepositoryProvider).signInWithGoogle();
+    } on AppAuthException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TextFormField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(labelText: 'E-mail'),
-        ),
-        const SizedBox(height: 10),
-        TextFormField(
-          controller: _passwordController,
-          obscureText: true,
-          textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(labelText: 'Senha'),
-        ),
-        const Spacer(),
-        FilledButton(
-          onPressed: _loading ? null : _submit,
-          child: Text(_loading ? 'Entrando...' : 'Entrar'),
-        ),
-      ],
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(labelText: 'E-mail institucional'),
+            validator: (value) {
+              final email = value?.trim().toLowerCase() ?? '';
+              if (email.isEmpty) return 'Informe o e-mail';
+              if (!email.endsWith('@souunit.com.br')) {
+                return 'Use seu e-mail @souunit.com.br';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _passwordController,
+            obscureText: true,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _submit(),
+            decoration: const InputDecoration(labelText: 'Senha'),
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Informe a senha';
+              if (value.length < 6) return 'A senha deve ter no minimo 6 caracteres';
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: _googleLoading ? null : _signInWithGoogle,
+            icon: const Icon(Icons.login),
+            label: Text(
+              _googleLoading ? 'Entrando com Google...' : 'Entrar com Google',
+            ),
+          ),
+          const Spacer(),
+          FilledButton(
+            onPressed: _loading ? null : _submit,
+            child: Text(_loading ? 'Entrando...' : 'Entrar'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -164,9 +205,8 @@ class _SignUpFormState extends ConsumerState<_SignUpForm> {
           );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Conta criada. Faca login para continuar.')),
+        const SnackBar(content: Text('Conta criada com sucesso.')),
       );
-      DefaultTabController.of(context).animateTo(0);
     } on AppAuthException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -196,9 +236,15 @@ class _SignUpFormState extends ConsumerState<_SignUpForm> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'E-mail'),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? 'Informe o e-mail' : null,
+            decoration: const InputDecoration(labelText: 'E-mail institucional'),
+            validator: (value) {
+              final email = value?.trim().toLowerCase() ?? '';
+              if (email.isEmpty) return 'Informe o e-mail';
+              if (!email.endsWith('@souunit.com.br')) {
+                return 'Use seu e-mail @souunit.com.br';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 10),
           TextFormField(

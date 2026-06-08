@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function institutionalEmail() {
+      return request.auth != null &&
+        request.auth.token.email != null &&
+        request.auth.token.email.matches('.*@[sS][oO][uU][uU][nN][iI][tT]\\.com\\.br$');
+    }
+
+    function ownsByUid(data) {
+      return data.user_uid is string &&
+        data.user_uid == request.auth.uid;
+    }
+
+    function validWriteOwnership(data) {
+      return data.user_uid is string &&
+        data.user_uid == request.auth.uid &&
+        data.criado_por is string;
+    }
+
+    match /profiles/{userId} {
+      allow read: if institutionalEmail() && userId == request.auth.uid;
+      allow create, update: if institutionalEmail() &&
+        userId == request.auth.uid &&
+        request.resource.data.id == request.auth.uid &&
+        request.resource.data.email is string &&
+        request.resource.data.usuario_logado is string;
+    }
+
+    match /jobs/{jobId} {
+      allow read: if institutionalEmail() && ownsByUid(resource.data);
+      allow create: if institutionalEmail() &&
+        validWriteOwnership(request.resource.data);
+      allow update: if institutionalEmail() &&
+        ownsByUid(resource.data) &&
+        validWriteOwnership(request.resource.data);
+      allow delete: if institutionalEmail() && ownsByUid(resource.data);
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if institutionalEmail() && ownsByUid(resource.data);
+      allow create: if institutionalEmail() &&
+        validWriteOwnership(request.resource.data);
+      allow update: if institutionalEmail() &&
+        ownsByUid(resource.data) &&
+        request.resource.data.user_uid == request.auth.uid;
+      allow delete: if institutionalEmail() && ownsByUid(resource.data);
+    }
+  }
+}
